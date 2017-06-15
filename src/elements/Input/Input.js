@@ -115,13 +115,6 @@ class Input extends Component {
     type: META.TYPES.ELEMENT,
   }
 
-  computeIcon = () => {
-    const { loading, icon } = this.props
-
-    if (!_.isNil(icon)) return icon
-    if (loading) return 'spinner'
-  }
-
   computeTabIndex = () => {
     const { disabled, tabIndex } = this.props
 
@@ -199,7 +192,7 @@ class Input extends Component {
       useKeyOnly(loading, 'loading'),
       useKeyOnly(transparent, 'transparent'),
       useValueAndKey(actionPosition, 'action') || useKeyOnly(action, 'action'),
-      useValueAndKey(iconPosition, 'icon') || useKeyOnly(icon || loading, 'icon'),
+      useValueAndKey(iconPosition, 'icon') || useKeyOnly(icon, 'icon'),
       useValueAndKey(labelPosition, 'labeled') || useKeyOnly(label, 'labeled'),
       'input',
       className,
@@ -222,7 +215,7 @@ class Input extends Component {
     // Render Shorthand
     // ----------------------------------------
     const actionElement = Button.create(action, { defaultProps: { className: 'button' } })
-    const iconElement = Icon.create(this.computeIcon())
+    const iconElement = Icon.create(icon)
     const labelElement = Label.create(label, {
       defaultProps: {
         className: cx(

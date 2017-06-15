@@ -1,1 +1,1 @@
-export { default, FormComponent, FormProps } from './Form';
+export { default, FormProps } from './Form';
