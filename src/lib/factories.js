@@ -77,10 +77,10 @@ export function createShorthand(Component, mapValueToProps, val, options = {}) {
   // ----------------------------------------
 
   // Use key, childKey, or generate key
-  if (_.isNil(props.key)) {
+  if (!props.key) {
     const { childKey } = props
 
-    if (!_.isNil(childKey)) {
+    if (childKey) {
       // apply and consume the childKey
       props.key = typeof childKey === 'function' ? childKey(props) : childKey
       delete props.childKey

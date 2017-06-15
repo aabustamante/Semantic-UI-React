@@ -175,8 +175,6 @@ class Button extends Component {
     if (ElementType === 'div') return 0
   }
 
-  focus = () => _.invoke(this.ref, 'focus')
-
   handleClick = (e) => {
     const { disabled, onClick } = this.props
 
@@ -187,8 +185,6 @@ class Button extends Component {
 
     if (onClick) onClick(e, this.props)
   }
-
-  handleRef = c => (this.ref = c)
 
   hasIconClass = () => {
     const { labelPosition, children, content, icon } = this.props
@@ -261,7 +257,7 @@ class Button extends Component {
       debug('render children:', { classes })
 
       return (
-        <ElementType {...rest} className={classes} onClick={this.handleClick} ref={this.handleRef} tabIndex={tabIndex}>
+        <ElementType {...rest} className={classes} tabIndex={tabIndex} onClick={this.handleClick}>
           {children}
         </ElementType>
       )
@@ -281,7 +277,7 @@ class Button extends Component {
       return (
         <ElementType {...rest} className={containerClasses} onClick={this.handleClick}>
           {labelPosition === 'left' && labelElement}
-          <button className={classes} ref={this.handleRef} tabIndex={tabIndex}>
+          <button className={classes} tabIndex={tabIndex}>
             {Icon.create(icon)} {content}
           </button>
           {(labelPosition === 'right' || !labelPosition) && labelElement}
@@ -294,7 +290,7 @@ class Button extends Component {
       debug('render icon && !label:', { classes })
 
       return (
-        <ElementType {...rest} className={classes} onClick={this.handleClick} ref={this.handleRef} tabIndex={tabIndex}>
+        <ElementType {...rest} className={classes} tabIndex={tabIndex} onClick={this.handleClick}>
           {Icon.create(icon)} {content}
         </ElementType>
       )
@@ -304,7 +300,7 @@ class Button extends Component {
     debug('render default:', { classes })
 
     return (
-      <ElementType {...rest} className={classes} onClick={this.handleClick} ref={this.handleRef} tabIndex={tabIndex}>
+      <ElementType {...rest} className={classes} tabIndex={tabIndex} onClick={this.handleClick}>
         {content}
       </ElementType>
     )

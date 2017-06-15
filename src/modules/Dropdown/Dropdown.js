@@ -25,8 +25,6 @@ import DropdownMenu from './DropdownMenu'
 
 const debug = makeDebugger('dropdown')
 
-const getKeyOrValue = (key, value) => _.isNil(key) ? value : key
-
 /**
  * A dropdown allows a user to select a value from a series of options.
  * @see Form
@@ -147,6 +145,9 @@ export default class Dropdown extends Component {
 
     /** A selection dropdown can allow multiple selections. */
     multiple: PropTypes.bool,
+
+    /** Name of the hidden input which holds the value. */
+    name: PropTypes.string,
 
     /** Message to display when there are no results. */
     noResultsMessage: PropTypes.string,
@@ -511,19 +512,20 @@ export default class Dropdown extends Component {
   }
 
   moveSelectionOnKeyDown = (e) => {
-    debug('moveSelectionOnKeyDown()', keyboardKey.getName(e))
-
-    const { multiple } = this.props
-    const moves = {
-      [keyboardKey.ArrowDown]: 1,
-      [keyboardKey.ArrowUp]: -1,
+    debug('moveSelectionOnKeyDown()')
+    debug(keyboardKey.getName(e))
+    switch (keyboardKey.getCode(e)) {
+      case keyboardKey.ArrowDown:
+        e.preventDefault()
+        this.moveSelectionBy(1)
+        break
+      case keyboardKey.ArrowUp:
+        e.preventDefault()
+        this.moveSelectionBy(-1)
+        break
+      default:
+        break
     }
-    const move = moves[keyboardKey.getCode(e)]
-
-    if (move === undefined) return
-    e.preventDefault()
-    this.moveSelectionBy(move)
-    if (!multiple) this.makeSelectedItemActive(e)
   }
 
   openOnSpace = (e) => {
@@ -757,16 +759,15 @@ export default class Dropdown extends Component {
     // insert the "add" item
     if (allowAdditions && search && searchQuery && !_.some(filteredOptions, { text: searchQuery })) {
       const additionLabelElement = React.isValidElement(additionLabel)
-        ? React.cloneElement(additionLabel, { key: 'addition-label' })
+        ? React.cloneElement(additionLabel, { key: 'label' })
         : additionLabel || ''
 
       const addItem = {
-        key: 'addition',
         // by using an array, we can pass multiple elements, but when doing so
         // we must specify a `key` for React to know which one is which
         text: [
           additionLabelElement,
-          <b key='addition-query'>{searchQuery}</b>,
+          <b key='addition'>{searchQuery}</b>,
         ],
         value: searchQuery,
         className: 'addition',
@@ -1056,8 +1057,28 @@ export default class Dropdown extends Component {
     return <div className={classes}>{_text}</div>
   }
 
+  renderHiddenInput = () => {
+    debug('renderHiddenInput()')
+    const { value } = this.state
+    const { multiple, name, options, selection } = this.props
+    debug(`name:      ${name}`)
+    debug(`selection: ${selection}`)
+    debug(`value:     ${value}`)
+    if (!selection) return null
+
+    // a dropdown without an active item will have an empty string value
+    return (
+      <select type='hidden' aria-hidden='true' name={name} value={value} multiple={multiple}>
+        <option value='' />
+        {_.map(options, (option, i) => (
+          <option key={option.key || option.value} value={option.value}>{option.text}</option>
+        ))}
+      </select>
+    )
+  }
+
   renderSearchInput = () => {
-    const { disabled, search, tabIndex } = this.props
+    const { disabled, search, name, tabIndex } = this.props
     const { searchQuery } = this.state
 
     if (!search) return null
@@ -1083,6 +1104,7 @@ export default class Dropdown extends Component {
         aria-autocomplete='list'
         onChange={this.handleSearchChange}
         className='search'
+        name={[name, 'search'].join('-')}
         autoComplete='off'
         tabIndex={computedTabIndex}
         style={{ width: searchWidth }}
@@ -1114,7 +1136,7 @@ export default class Dropdown extends Component {
       const defaultProps = {
         active: item.value === selectedLabel,
         as: 'a',
-        key: getKeyOrValue(item.key, item.value),
+        key: item.key || item.value,
         onClick: this.handleLabelClick,
         onRemove: this.handleLabelRemove,
         value: item.value,
@@ -1145,7 +1167,6 @@ export default class Dropdown extends Component {
       onClick: this.handleItemClick,
       selected: selectedIndex === i,
       ...opt,
-      key: getKeyOrValue(opt.key, opt.value),
       // Needed for handling click events on disabled items
       style: { ...opt.style, pointerEvents: 'all' },
     }))
@@ -1260,6 +1281,7 @@ export default class Dropdown extends Component {
         tabIndex={computedTabIndex}
         ref={this.handleRef}
       >
+        {this.renderHiddenInput()}
         {this.renderLabels()}
         {this.renderSearchInput()}
         {this.renderSearchSizer()}

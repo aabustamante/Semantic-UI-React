@@ -211,6 +211,10 @@ describe('Dropdown', () => {
       wrapperMount(<Dropdown />)
       wrapper.find('div').at(0).should.have.prop('role', 'listbox')
     })
+    it('should label selection dropdown with aria-hidden=true', () => {
+      wrapperMount(<Dropdown selection />)
+      wrapper.find('select').at(0).should.have.prop('aria-hidden', 'true')
+    })
     it('should label search dropdown as a combobox', () => {
       wrapperMount(<Dropdown search />)
       wrapper.find('div').at(0).should.have.prop('role', 'combobox')
@@ -785,24 +789,6 @@ describe('Dropdown', () => {
         .find('div.text')
         .should.contain.text(nextItem.text)
     })
-
-    it('updates value on down arrow', () => {
-      wrapperMount(<Dropdown options={options} selection />)
-
-      wrapper.simulate('click')
-      domEvent.keyDown(document, { key: 'ArrowDown' })
-
-      wrapper.should.have.state('value', options[1].value)
-    })
-
-    it('updates value on up arrow', () => {
-      wrapperMount(<Dropdown options={options} selection />)
-
-      wrapper.simulate('click')
-      domEvent.keyDown(document, { key: 'ArrowUp' })
-
-      wrapper.should.have.state('value', options[4].value)
-    })
   })
 
   describe('text', () => {
@@ -1261,12 +1247,13 @@ describe('Dropdown', () => {
     })
     describe('removing items', () => {
       it('calls onChange without the clicked value', () => {
+        const name = 'my-dropdown'
         const value = _.map(options, 'value')
         const randomIndex = _.random(options.length - 1)
         const randomValue = value[randomIndex]
         const expected = _.without(value, randomValue)
         const spy = sandbox.spy()
-        wrapperMount(<Dropdown options={options} selection value={value} multiple onChange={spy} />)
+        wrapperMount(<Dropdown options={options} selection name={name} value={value} multiple onChange={spy} />)
 
         wrapper
           .find('.delete.icon')
@@ -1274,7 +1261,7 @@ describe('Dropdown', () => {
           .simulate('click')
 
         spy.should.have.been.calledOnce()
-        spy.should.have.been.calledWithMatch({}, { value: expected })
+        spy.should.have.been.calledWithMatch({}, { name, value: expected })
       })
     })
   })
@@ -1296,9 +1283,10 @@ describe('Dropdown', () => {
       spy.should.not.have.been.called()
     })
     it('removes the last item when there is no search query', () => {
+      const name = 'my-dropdown'
       const value = _.map(options, 'value')
       const expected = _.dropRight(value)
-      wrapperMount(<Dropdown options={options} selection value={value} multiple search onChange={spy} />)
+      wrapperMount(<Dropdown options={options} selection name={name} value={value} multiple search onChange={spy} />)
 
       // open
       wrapper.simulate('click')
@@ -1306,13 +1294,14 @@ describe('Dropdown', () => {
       domEvent.keyDown(document, { key: 'Backspace' })
 
       spy.should.have.been.calledOnce()
-      spy.should.have.been.calledWithMatch({}, { value: expected })
+      spy.should.have.been.calledWithMatch({}, { name, value: expected })
     })
     it('removes the last item when there is no search query when uncontrolled', () => {
+      const name = 'my-dropdown'
       const value = _.map(options, 'value')
       const expected = _.dropRight(value)
       wrapperMount(
-        <Dropdown options={options} selection defaultValue={value} multiple search onChange={spy} />
+        <Dropdown options={options} selection name={name} defaultValue={value} multiple search onChange={spy} />
       )
 
       // open
@@ -1321,7 +1310,7 @@ describe('Dropdown', () => {
       domEvent.keyDown(document, { key: 'Backspace' })
 
       spy.should.have.been.calledOnce()
-      spy.should.have.been.calledWithMatch({}, { value: expected })
+      spy.should.have.been.calledWithMatch({}, { name, value: expected })
 
       wrapper
         .state('value')
@@ -1362,35 +1351,38 @@ describe('Dropdown', () => {
     })
 
     it('is called with event and value on item click', () => {
+      const name = 'my-dropdown'
       const randomIndex = _.random(options.length - 1)
       const randomValue = options[randomIndex].value
-      wrapperMount(<Dropdown options={options} selection onChange={spy} />)
+      wrapperMount(<Dropdown options={options} selection onChange={spy} name={name} />)
         .simulate('click')
         .find('DropdownItem')
         .at(randomIndex)
         .simulate('click')
 
       spy.should.have.been.calledOnce()
-      spy.should.have.been.calledWithMatch({}, { value: randomValue })
+      spy.should.have.been.calledWithMatch({}, { name, value: randomValue })
     })
     it('is called with event and value when pressing enter on a selected item', () => {
+      const name = 'my-dropdown'
       const firstValue = options[0].value
-      wrapperMount(<Dropdown options={options} selection onChange={spy} />)
+      wrapperMount(<Dropdown options={options} selection onChange={spy} name={name} />)
         .simulate('click')
 
       domEvent.keyDown(document, { key: 'Enter' })
 
       spy.should.have.been.calledOnce()
-      spy.should.have.been.calledWithMatch({}, { value: firstValue })
+      spy.should.have.been.calledWithMatch({}, { name, value: firstValue })
     })
     it('is called with event and value when blurring', () => {
+      const name = 'my-dropdown'
       const firstValue = options[0].value
-      wrapperMount(<Dropdown options={options} selection onChange={spy} />)
+      wrapperMount(<Dropdown options={options} selection onChange={spy} name={name} />)
         .simulate('focus')  // open, highlights first item
         .simulate('blur')   // blur should activate selected item
 
       spy.should.have.been.calledOnce()
-      spy.should.have.been.calledWithMatch({}, { value: firstValue })
+      spy.should.have.been.calledWithMatch({}, { name, value: firstValue })
     })
     it('is not called on blur when closed', () => {
       wrapperMount(<Dropdown options={options} selection open={false} onChange={spy} />)
@@ -1505,19 +1497,47 @@ describe('Dropdown', () => {
         .find('DropdownItem')
         .everyWhere(item => item.should.have.prop('data-foo', 'someValue'))
     })
+  })
 
-    it('handles keys correctly', () => {
-      const customOptions = [
-        { key: 0, text: 'foo', value: 'foo' },
-        { key: null, text: 'bar', value: 'bar' },
-        { key: undefined, text: 'baz', value: 'baz' },
-      ]
-      wrapperShallow(<Dropdown options={customOptions} selection />)
-      const items = wrapper.find('DropdownItem')
+  describe('selection', () => {
+    it('does not add a hidden select by default', () => {
+      wrapperMount(<Dropdown />)
+        .should.not.have.descendants('select[type="hidden"]')
+    })
+    it('adds a hidden select', () => {
+      wrapperShallow(<Dropdown options={options} selection />)
+        .should.have.exactly(1).descendants('select[type="hidden"]')
+    })
+    it('passes the name prop to the hidden select', () => {
+      wrapperShallow(<Dropdown name='foo' options={options} selection />)
+        .find('select[type="hidden"]').should.have.prop('name', 'foo')
+    })
+    it('passes the value prop to the hidden select', () => {
+      const value = _.values(options)
 
-      items.at(0).key().should.equal('0')
-      items.at(1).key().should.equal('bar')
-      items.at(2).key().should.equal('baz')
+      wrapperShallow(<Dropdown name='foo' value={value} options={options} selection />)
+        .find('select[type="hidden"][name="foo"]').should.have.prop('value', value)
+    })
+    it('passes the multiple prop to the hidden select', () => {
+      const selector = 'select[type="hidden"][name="foo"]'
+
+      wrapperShallow(<Dropdown name='foo' multiple options={options} selection />)
+        .find(selector).should.have.prop('multiple', true)
+
+      wrapperShallow(<Dropdown name='foo' multiple={false} options={options} selection />)
+        .find(selector).should.have.prop('multiple', false)
+    })
+    it('adds options to the hidden select', () => {
+      wrapperShallow(<Dropdown options={options} selection />)
+        .should.have.exactly(options.length + 1).descendants('option')
+
+      options.forEach((opt, i) => {
+        // index is incremented to exclude the empty option value
+        const optionElement = wrapper.find('option').at(i + 1)
+
+        optionElement.should.have.prop('value', opt.value)
+        optionElement.should.have.text(opt.text)
+      })
     })
   })
 
@@ -1530,6 +1550,13 @@ describe('Dropdown', () => {
     it('adds a search input when present', () => {
       wrapperShallow(<Dropdown options={options} selection search />)
         .should.have.exactly(1).descendants('input.search')
+    })
+
+    it('adds the name prop to the search input', () => {
+      wrapperShallow(<Dropdown name='foo' options={options} selection search />)
+        .should.have.descendants('input.search')
+
+      wrapper.find('input.search').should.have.prop('name', 'foo-search')
     })
 
     it('sets focus to the search input on open', () => {
@@ -1943,7 +1970,7 @@ describe('Dropdown', () => {
         .prop('text')
 
       expect(text[0]).to.equal('Add ')
-      shallow(text[1]).equals(<b key='addition-query'>boo</b>)
+      shallow(text[1]).equals(<b key='addition'>boo</b>)
     })
 
     it('uses custom additionLabel string', () => {
@@ -1968,7 +1995,7 @@ describe('Dropdown', () => {
         .prop('text')
 
       expect(text[0]).to.equal('New: ')
-      shallow(text[1]).equals(<b key='addition-query'>boo</b>)
+      shallow(text[1]).equals(<b key='addition'>boo</b>)
     })
 
     it('uses custom additionLabel element', () => {
@@ -1993,7 +2020,7 @@ describe('Dropdown', () => {
         .prop('text')
 
       shallow(text[0]).equals(<i key='label'>New: </i>)
-      shallow(text[1]).equals(<b key='addition-query'>boo</b>)
+      shallow(text[1]).equals(<b key='addition'>boo</b>)
     })
 
     it('uses no additionLabel', () => {
@@ -2018,7 +2045,7 @@ describe('Dropdown', () => {
         .prop('text')
 
       expect(text[0]).to.equal('')
-      shallow(text[1]).equals(<b key='addition-query'>boo</b>)
+      shallow(text[1]).equals(<b key='addition'>boo</b>)
     })
 
     it('keeps custom value option (bottom) when options change', () => {
@@ -2081,8 +2108,9 @@ describe('Dropdown', () => {
 
     it('calls onAddItem prop when clicking new value', () => {
       const spy = sandbox.spy()
+      const name = 'my-dropdown'
       const search = wrapperMount(
-        <Dropdown options={customOptions} selection search allowAdditions onAddItem={spy} />
+        <Dropdown options={customOptions} selection search allowAdditions onAddItem={spy} name={name} />
       )
         .find('input.search')
 
@@ -2094,13 +2122,14 @@ describe('Dropdown', () => {
         .simulate('click')
 
       spy.should.have.been.calledOnce()
-      spy.should.have.been.calledWithMatch({}, { value: 'boo' })
+      spy.should.have.been.calledWithMatch({}, { name, value: 'boo' })
     })
 
     it('calls onAddItem prop when pressing enter on new value', () => {
       const spy = sandbox.spy()
+      const name = 'my-dropdown'
       const search = wrapperMount(
-        <Dropdown options={customOptions} selection search allowAdditions onAddItem={spy} />
+        <Dropdown options={customOptions} selection search allowAdditions onAddItem={spy} name={name} />
       )
         .find('input.search')
 
@@ -2108,7 +2137,7 @@ describe('Dropdown', () => {
       domEvent.keyDown(document, { key: 'Enter' })
 
       spy.should.have.been.calledOnce()
-      spy.should.have.been.calledWithMatch({}, { value: 'boo' })
+      spy.should.have.been.calledWithMatch({}, { name, value: 'boo' })
     })
   })
 
